@@ -39,7 +39,9 @@ def ECDSA_verify(Q, message, r, s):
     u2 = (r * w) % ORDER
     u1g = mult(u1, BaseU, BaseV, p)
     u2Q = mult(u2, Q[0], Q[1], p)
-    v = add(u1g[0], u1g[1], u2Q[0], u2Q[1], p)
+    v = add(u1g[0], u1g[1], u2Q[0], u2Q[1], p)[0] % ORDER
+    print(v)
+    print(r)
     return v == r
 
 
