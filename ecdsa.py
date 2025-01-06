@@ -30,8 +30,18 @@ def ECDSA_sign(d, message):
     h = Hash(message)
     s = (mod_inv(k, ORDER) * (h + d * r)) % ORDER
     return r, s
+        #  x, y
 
 def ECDSA_verify(Q, message, r, s):
+    h = Hash(message)
+    w = mod_inv(s, ORDER)
+    u1 = (h * w) % ORDER
+    u2 = (r * w) % ORDER
+    u1g = mult(u1, BaseU, BaseV, p)
+    u2Q = mult(u2, Q[0], Q[1], p)
+    v = add(u1g[0], u1g[1], u2Q[0], u2Q[1], p)
+    return v == r
+
 
 if __name__ == "__main__":
     message = b"A very very important message !"
