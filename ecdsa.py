@@ -4,7 +4,7 @@ from random import randint
 from algebra import mod_inv
 
 p = 2**255 - 19
-ORDER = (2**252 + 27742317777372353535851937790883648493)
+ORDER = 2**252 + 27742317777372353535851937790883648493
 
 BaseU = 9
 BaseV = computeVcoordinate(BaseU)
@@ -12,25 +12,28 @@ BaseV = computeVcoordinate(BaseU)
 
 def Hash(message):
     h = SHA256.new(message)
-    return (int(h.hexdigest(), 16))
+    return int(h.hexdigest(), 16)
+
 
 def ECDSA_generate_nonce():
     return randint(1, ORDER - 1)
+
 
 def ECDSA_generate_keys():
     d = randint(1, ORDER - 1)
     Q = mult(d, BaseU, BaseV, p)
     return d, Q
 
+
 def ECDSA_sign(d, message):
     k = ECDSA_generate_nonce()
-    k = 0x2c92639dcf417afeae31e0f8fddc8e48b3e11d840523f54aaa97174221faee6
+    h = Hash(message)
     R = mult(k, BaseU, BaseV, p)[0]
     r = R % ORDER
-    h = Hash(message)
     s = (mod_inv(k, ORDER) * (h + d * r)) % ORDER
     return r, s
-        #  x, y
+    #  x, y
+
 
 def ECDSA_verify(Q, message, r, s):
     h = Hash(message)
@@ -47,17 +50,12 @@ def ECDSA_verify(Q, message, r, s):
 
 if __name__ == "__main__":
     message = b"A very very important message !"
-    x = 0xc841f4896fe86c971bedbcf114a6cfd97e4454c9be9aba876d5a195995e2ba8
-
+    x = 0xC841F4896FE86C971BEDBCF114A6CFD97E4454C9BE9ABA876D5A195995E2BA8
     Q = mult(x, BaseU, BaseV, p)
-
     r, s = ECDSA_sign(x, message)
-
-    expected_r = 0x429146a1375614034c65c2b6a86b2fc4aec00147f223cb2a7a22272d4a3fdd2
-    expected_s = 0xf23bcdebe2e0d8571d195a9b8a05364b14944032032eeeecd22a0f6e94f8f33
-
+    expected_r = 0x429146A1375614034C65C2B6A86B2FC4AEC00147F223CB2A7A22272D4A3FDD2
+    expected_s = 0xF23BCDEBE2E0D8571D195A9B8A05364B14944032032EEEECD22A0F6E94F8F33
     is_valid = ECDSA_verify(Q, message, r, s)
-
     print(f"Generated r: {hex(r)}")
     print(f"Generated s: {hex(s)}")
     print(f"Expected r: {hex(expected_r)}")
