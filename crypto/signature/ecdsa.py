@@ -1,8 +1,8 @@
-from interface import interfaceSigniature
-from rfc7748 import x25519, add, computeVcoordinate, mult
+from ..internal.interface import interfaceSigniature
+from ..internal.rfc7748 import add, computeVcoordinate, mult
+from ..internal.algebra import mod_inv
 from Crypto.Hash import SHA256
 from random import randint
-from algebra import mod_inv
 
 p = 2**255 - 19
 ORDER = 2**252 + 27742317777372353535851937790883648493
@@ -11,7 +11,7 @@ BaseU = 9
 BaseV = computeVcoordinate(BaseU)
 
 
-class ecdsa(interfaceSigniature):
+class Ecdsa(interfaceSigniature):
     def __init__(self):
         super().__init__()
 

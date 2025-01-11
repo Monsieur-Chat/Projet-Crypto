@@ -1,6 +1,5 @@
-from interface import interfaceEncryption
-from rfc7748 import x25519, add, sub, computeVcoordinate, mult
-from algebra import mod_inv, int_to_bytes
+from ..internal.interface import interfaceEncryption
+from ..internal.rfc7748 import add, sub, computeVcoordinate, mult
 from random import randint
 
 p = 2**255 - 19
@@ -10,7 +9,7 @@ BaseU = 9
 BaseV = computeVcoordinate(BaseU)
 
 
-class ecElGamal(interfaceEncryption):
+class EcElGamal(interfaceEncryption):
     def __init__(self):
         super().__init__()
 

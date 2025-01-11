@@ -1,8 +1,8 @@
 from Crypto.Hash import SHA256
-from interface import interfaceSigniature
+from ..internal.interface import interfaceSigniature
 
 
-class sha256(interfaceSigniature):
+class Sha256(interfaceSigniature):
     def __init__(self):
         super().__init__()
 
