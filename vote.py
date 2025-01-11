@@ -4,7 +4,7 @@ from crypto.encryption import ElGamal
 from crypto.signature import Dsa
 
 
-class Vote:
+class Urn:
     def __init__(self, signature: interfaceSigniature, encryption: interfaceEncryption):
         super().__init__()
         self.signature = signature
@@ -59,7 +59,7 @@ class Vote:
 
 
 if __name__ == "__main__":
-    v = Vote(Dsa(), ElGamal())
+    v = Urn(Dsa(), ElGamal())
     publicKey = v.getPublicKey()
 
     ec = ElGamal()
