@@ -24,6 +24,7 @@ L'EC ElGamal (Elliptic Curve ElGamal) est effectivement un schéma de chiffremen
 
    - Supposons que vous avez deux messages $` m_1 `$ et $` m_2 `$ chiffrés respectivement en $` (C_{1,1}, C_{2,1}) `$ et $` (C_{1,2}, C_{2,2}) `$.
    - Les chiffrés sont :
+
      $`
      C_{1,1} = k_1P, \quad C_{2,1} = m_1 + k_1Q
      `$
@@ -33,14 +34,19 @@ L'EC ElGamal (Elliptic Curve ElGamal) est effectivement un schéma de chiffremen
      `$
 
    - Pour additionner les messages chiffrés, vous additionnez simplement les composantes $` C_2 `$ :
+
      $`
      C_{2,1} + C_{2,2} = (m_1 + k_1Q) + (m_2 + k_2Q) = (m_1 + m_2) + (k_1 + k_2)Q
      `$
+
    - La nouvelle composante $` C_1 `$ sera :
+
      $`
      C_{1,1} + C_{1,2} = k_1P + k_2P = (k_1 + k_2)P
      `$
+
    - Ainsi, le chiffré de la somme des messages $` m_1 + m_2 `$ est
+
      $`
      (C_{1,1} + C_{1,2}, C_{2,1} + C_{2,2}) = ((k_1 + k_2)P, (m_1 + m_2) + (k_1 + k_2)Q)
      `$
