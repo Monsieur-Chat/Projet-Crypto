@@ -15,11 +15,14 @@ class ecdsa(interfaceSigniature):
     def __init__(self):
         super().__init__()
 
-g   def sign(self, vote, privKey):
+    def sign(self, vote, privKey):
         return ECDSA_sign(privKey, vote)
 
     def verify(self, vote, signature, pubKey):
         return ECDSA_verify(pubKey, vote, signature[0], signature[1])
+
+    def generateKeys(self):
+        return ECDSA_generate_keys()
 
 
 def Hash(message):

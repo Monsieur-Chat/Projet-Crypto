@@ -21,6 +21,16 @@ class ecElGamal(interfaceEncryption):
         x, y = ECEG_decrypt(cipher[0], cipher[1], privKey)
         return bruteECLog(x, y, p)
 
+    def generateKeys(self):
+        return ECEG_generate_keys()
+
+    def addCipher(self, C1, C2):
+        r1, c1 = C1
+        r2, c2 = C2
+        rSum = add(r1[0], r1[1], r2[0], r2[1], p)
+        cSum = add(c1[0], c1[1], c2[0], c2[1], p)
+        return (rSum, cSum)
+
 
 def bruteECLog(C1, C2, p):
     s1, s2 = 1, 0
