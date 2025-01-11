@@ -52,39 +52,37 @@ def ECEG_decrypt(C1, C2, privKey):
     return decrypted_message
 
 
-if __name__ == "__main__":
+def ECEG_add(list_r, list_c, vote):
+    assert len(list_r) == len(list_c)
+    assert len(list_r) == len(vote)
 
+    for i in range(len(vote)):
+        r1, c1 = vote[i]
+        list_r[i] = add(list_r[i][0], list_r[i][1], r1[0], r1[1], p)
+        list_c[i] = add(list_c[i][0], list_c[i][1], c1[0], c1[1], p)
+
+    return list_r, list_c
+
+
+if __name__ == "__main__":
     privKey, pubKey = ECEG_generate_keys()
-    
 
     # client 1
     messages = [0, 0, 0, 1, 0]
     encrypted_messages = [ECEG_encrypt(message, pubKey) for message in messages]
+    print(encrypted_messages)
 
-    # client 2 
+    # client 2
     messages = [0, 1, 0, 0, 0]
     encrypted_messages2 = [ECEG_encrypt(message, pubKey) for message in messages]
 
 
-    # server
-    r1_sum = (1, 0)
-    c1_sum = (1, 0)
+    list_r = [(1, 0)] * 5
+    list_c = [(1, 0)] * 5
 
-    r2_sum = (1, 0)
-    c2_sum = (1, 0)
-
-    r3_sum = (1, 0)
-    c3_sum = (1, 0)
-
-    c4_sum = (1, 0)
-    r4_sum = (1, 0)
-
-    r5_sum = (1, 0)
-    c5_sum = (1, 0)
-
-    list_r = [r1_sum, r2_sum, r3_sum, r4_sum, r5_sum]
-    list_c = [c1_sum, c2_sum, c3_sum, c4_sum, c5_sum]
-
+    list_r, list_c = ECEG_add(list_r, list_c, encrypted_messages)
+    list_r, list_c = ECEG_add(list_r, list_c, encrypted_messages2)
+    """
     for i in range(len(encrypted_messages)):
         r1, c1 = encrypted_messages[i]
         r2, c2 = encrypted_messages2[i]
@@ -93,7 +91,7 @@ if __name__ == "__main__":
 
         list_r[i] = add(list_r[i][0], list_r[i][1], r2[0], r2[1], p)
         list_c[i] = add(list_c[i][0], list_c[i][1], c2[0], c2[1], p)
-
+    """
 
 
     # print(f"Sum of encrypted messages: {r_sum}, {c_sum}")
