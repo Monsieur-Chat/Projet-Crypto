@@ -12,6 +12,7 @@ class Urn:
         self.__privateKey, self.__publicKey = self.encryption.generateKeys()
         self.__nbOfCandidates = 5
         self.__listOfValidVote: list = []
+        self.__voteList: list = []
         self.__result: list = [self.encryption.nullCipher()] * self.__nbOfCandidates
 
     def getPublicKey(self):
@@ -30,13 +31,16 @@ class Urn:
         sumVote = self.encryption.decrypt(sumVote, self.__privateKey)
         return sumVote == 1
 
-    def voteValidation(self, voteList, signatures, usersPubKey):
-        assert len(voteList) == len(signatures) == len(usersPubKey)
-        for i in range(len(voteList)):
+    def vote(self, vote):
+        self.__voteList.append(vote)
+
+    def voteValidation(self, signatures, usersPubKey):
+        assert len(self.__voteList) == len(signatures) == len(usersPubKey)
+        for i in range(len(self.__voteList)):
             if self.__validSignature(
-                voteList[i], signatures[i], usersPubKey[i]
-            ) and self.__validVote(voteList[i]):
-                self.__listOfValidVote.append(voteList[i])
+                self.__voteList[i], signatures[i], usersPubKey[i]
+            ) and self.__validVote(self.__voteList[i]):
+                self.__listOfValidVote.append(self.__voteList[i])
                 print("Valid vote")
             else:
                 cprint("Invalid vote", "red")
@@ -82,7 +86,9 @@ if __name__ == "__main__":
     allSignature = [signatureCit1, signatureCit2]
     allPubKey = [dsaPubKey1, dsaPubKey2]
 
-    v.voteValidation(allCipher, allSignature, allPubKey)
+    v.vote(cipherCit1)
+    v.vote(cipherCit2)
+    v.voteValidation(allSignature, allPubKey)
     v.counting()
 
     print(v.getResult())
