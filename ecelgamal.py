@@ -1,3 +1,4 @@
+from interface import interfaceEncryption
 from rfc7748 import x25519, add, sub, computeVcoordinate, mult
 from algebra import mod_inv, int_to_bytes
 from random import randint
@@ -7,6 +8,18 @@ ORDER = 2**252 + 27742317777372353535851937790883648493
 
 BaseU = 9
 BaseV = computeVcoordinate(BaseU)
+
+
+class ecElGamal(interfaceEncryption):
+    def __init__(self):
+        super().__init__()
+
+    def encrypt(self, message, pubKey):
+        return ECEG_encrypt(message, pubKey)
+
+    def decrypt(self, cipher, privKey):
+        x, y = ECEG_decrypt(cipher[0], cipher[1], privKey)
+        return bruteECLog(x, y, p)
 
 
 def bruteECLog(C1, C2, p):
@@ -76,7 +89,6 @@ if __name__ == "__main__":
     messages = [0, 1, 0, 0, 0]
     encrypted_messages2 = [ECEG_encrypt(message, pubKey) for message in messages]
 
-
     list_r = [(1, 0)] * 5
     list_c = [(1, 0)] * 5
 
@@ -92,7 +104,6 @@ if __name__ == "__main__":
         list_r[i] = add(list_r[i][0], list_r[i][1], r2[0], r2[1], p)
         list_c[i] = add(list_c[i][0], list_c[i][1], c2[0], c2[1], p)
     """
-
 
     # print(f"Sum of encrypted messages: {r_sum}, {c_sum}")
     for i in range(len(list_r)):

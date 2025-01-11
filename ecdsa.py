@@ -1,3 +1,4 @@
+from interface import interfaceSigniature
 from rfc7748 import x25519, add, computeVcoordinate, mult
 from Crypto.Hash import SHA256
 from random import randint
@@ -8,6 +9,17 @@ ORDER = 2**252 + 27742317777372353535851937790883648493
 
 BaseU = 9
 BaseV = computeVcoordinate(BaseU)
+
+
+class ecdsa(interfaceSigniature):
+    def __init__(self):
+        super().__init__()
+
+g   def sign(self, vote, privKey):
+        return ECDSA_sign(privKey, vote)
+
+    def verify(self, vote, signature, pubKey):
+        return ECDSA_verify(pubKey, vote, signature[0], signature[1])
 
 
 def Hash(message):

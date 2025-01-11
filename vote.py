@@ -1,5 +1,5 @@
-from ecelgamal import *
-from ecdsa import *
+from ecelgamal import ECEG_encrypt, ECEG_decrypt, bruteECLog, ECEG_generate_keys, p, ECEG_add
+from ecdsa import ECDSA_sign, ECDSA_verify, BaseU, BaseV, mult
 
 
 # Function to cast a vote
@@ -62,7 +62,7 @@ def votingProcess():
     list_r, list_c = ECEG_add(list_r, list_c, encrypted_vote2)
 
     encrypted_vote3, signature3 = castVote(vote3, userPrivKey)
-    assert areVotesValid(encrypted_vote2, signature2, userPubKey)
+    assert areVotesValid(encrypted_vote3, signature3, userPubKey)
     list_r, list_c = ECEG_add(list_r, list_c, encrypted_vote3)
 
 #########################################################
@@ -88,9 +88,9 @@ def votingProcess():
         print(f"\nThe winner are candidates {"#" + str(winner + 1) + ", #" + ", #".join([str(win + 1) for win in otherWinner[1:]])} with {openedBallotBox[winner]} votes !")
 
 
-
+if __name__ == "__main__":
 # Generate keys for elgamal as global variable
-privKey, pubKey = ECEG_generate_keys()
+    privKey, pubKey = ECEG_generate_keys()
 
 # Run the voting process
-votingProcess()
+    votingProcess()
