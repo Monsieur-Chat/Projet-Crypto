@@ -25,9 +25,13 @@ class interfaceEncryption(ABC):
         pass
 
     @abstractmethod
-    def generateKeys(self):
+    def generateKeys(self) -> tuple:
         pass
 
     @abstractmethod
     def addCipher(self, c1, c2):
+        pass
+
+    @abstractmethod
+    def nullCipher(self):
         pass

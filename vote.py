@@ -1,96 +1,88 @@
-from ecelgamal import ECEG_encrypt, ECEG_decrypt, bruteECLog, ECEG_generate_keys, p, ECEG_add
-from ecdsa import ECDSA_sign, ECDSA_verify, BaseU, BaseV, mult
+from termcolor import cprint
+from crypto import interfaceSigniature, interfaceEncryption
+from crypto.encryption import ElGamal
+from crypto.signature import Dsa
 
 
-# Function to cast a vote
-def castVote(voteList, userPrivKey):
-    """
-    Cast a vote by encrypting, hashing, and signing each message in the vote list.
-    Returns the encrypted vote and signature.
-    """
-    # Encrypt each message in the vote list
-    encryptedVotes = [ECEG_encrypt(vote, pubKey) for vote in voteList]
+class Vote:
+    def __init__(self, signature: interfaceSigniature, encryption: interfaceEncryption):
+        super().__init__()
+        self.signature = signature
+        self.encryption = encryption
+        self.__privateKey, self.__publicKey = self.encryption.generateKeys()
+        self.__nbOfCandidates = 5
+        self.__listOfValidVote: list = []
+        self.__result: list = [self.encryption.nullCipher()] * self.__nbOfCandidates
 
-    # Sign each encrypted message, summed each coordinate
-    signatures = [ECDSA_sign(userPrivKey, bytes(str(encryptedVote), "utf-8")) for encryptedVote in encryptedVotes]
+    def getPublicKey(self):
+        return self.__publicKey
 
-    return encryptedVotes, signatures
+    def __validSignature(self, votes, signature, userPubKey):
+        return self.signature.verify(votes, signature, userPubKey)
 
+    def __validVote(self, voteList):
+        sumVote = self.encryption.nullCipher()
+        if not len(voteList) == self.__nbOfCandidates:
+            cprint("Invalid number of votes", "red")
+            return False
+        for i in range(len(voteList)):
+            sumVote = self.encryption.addCipher(sumVote, voteList[i])
+        sumVote = self.encryption.decrypt(sumVote, self.__privateKey)
+        return sumVote == 1
 
-def areVotesValid(voteList, signatures, userPubKey):
-    for i in range(len(voteList)):
-        return ECDSA_verify(userPubKey, bytes(str(voteList[i]), "utf-8"), signatures[i][0], signatures[i][1])
+    def voteValidation(self, voteList, signatures, usersPubKey):
+        assert len(voteList) == len(signatures) == len(usersPubKey)
+        for i in range(len(voteList)):
+            if self.__validSignature(
+                voteList[i], signatures[i], usersPubKey[i]
+            ) and self.__validVote(voteList[i]):
+                self.__listOfValidVote.append(voteList[i])
+                print("Valid vote")
+            else:
+                cprint("Invalid vote", "red")
 
+    def counting(self):
+        assert self.__listOfValidVote, "please validate vote first"
+        cprint(f"Number of valid votes: {len(self.__listOfValidVote)}", "green")
+        for candidate in range(self.__nbOfCandidates):
+            for vote in self.__listOfValidVote:
+                self.__result[candidate] = self.encryption.addCipher(
+                    self.__result[candidate], vote[candidate]
+                )
 
-def openBallotBox(list_r, list_c, privKey):
-    out = []
-    for i in range(len(list_r)):
-        r_sum = list_r[i]
-        c_sum = list_c[i]
-        decrypted_sum = ECEG_decrypt(r_sum, c_sum, privKey)
-        out.append(bruteECLog(decrypted_sum[0], decrypted_sum[1], p))
-
-    return out
-
-
-def votingProcess():
-    # Initiate ballot box : [c1, c2, c3 ...]
-    list_r = [(1, 0)] * 5
-    list_c = [(1, 0)] * 5
-
-    # ECDSA values initiated in ecdsa.py
-
-    #####################################################
-    # Define votes (binary lists for candidates C1 to C5)
-    vote1 = [1, 0, 0, 0, 0]  # Vote for candidate C1
-    vote2 = [0, 1, 0, 0, 0]  # Vote for candidate C2
-    vote3 = [0, 1, 0, 0, 0]  # Vote for candidate C4
-
-    # Get key, all user get the same key for the moment
-
-    userPrivKey = 0xC841F4896FE86C971BEDBCF114A6CFD97E4454C9BE9ABA876D5A195995E2BA8
-    userPubKey = mult(userPrivKey, BaseU, BaseV, p)
-
-
-    # Each voter casts their vote
-    encrypted_vote1, signature1 = castVote(vote1, userPrivKey)
-    assert areVotesValid(encrypted_vote1, signature1, userPubKey)
-    list_r, list_c = ECEG_add(list_r, list_c, encrypted_vote1)
-
-    encrypted_vote2, signature2 = castVote(vote2, userPrivKey)
-    assert areVotesValid(encrypted_vote2, signature2, userPubKey)
-    list_r, list_c = ECEG_add(list_r, list_c, encrypted_vote2)
-
-    encrypted_vote3, signature3 = castVote(vote3, userPrivKey)
-    assert areVotesValid(encrypted_vote3, signature3, userPubKey)
-    list_r, list_c = ECEG_add(list_r, list_c, encrypted_vote3)
-
-#########################################################
-
-    # Decrypt Ballot box and show results
-    openedBallotBox = openBallotBox(list_r, list_c, privKey)
-
-    # Show results
-    winner = 0
-    otherWinner = []
-
-    for i, vote in enumerate(openedBallotBox):
-        if vote > openedBallotBox[winner]:
-            winner = i
-            otherWinner = []
-        elif vote == openedBallotBox[winner]:
-            otherWinner.append(i)
-
-        print(f"Candidate #{i+1} : {vote} votes")
-    if not otherWinner:  # Single winner
-        print(f"\nThe winner is candidate #{winner+1} with {openedBallotBox[winner]} votes !")
-    else:
-        print(f"\nThe winner are candidates {"#" + str(winner + 1) + ", #" + ", #".join([str(win + 1) for win in otherWinner[1:]])} with {openedBallotBox[winner]} votes !")
+    def getResult(self):
+        for i in range(len(self.__result)):
+            self.__result[i] = self.encryption.decrypt(
+                self.__result[i], self.__privateKey
+            )
+        return self.__result
 
 
 if __name__ == "__main__":
-# Generate keys for elgamal as global variable
-    privKey, pubKey = ECEG_generate_keys()
+    v = Vote(Dsa(), ElGamal())
+    publicKey = v.getPublicKey()
 
-# Run the voting process
-    votingProcess()
+    ec = ElGamal()
+    dsa = Dsa()
+    voteCit1 = [1, 0, 0, 0, 0]
+    dsaPrivKey1, dsaPubKey1 = dsa.generateKeys()
+    cipherCit1 = []
+    for voteIndex in range(len(voteCit1)):
+        cipherCit1.append(ec.encrypt(voteCit1[voteIndex], publicKey))
+    signatureCit1 = dsa.sign(cipherCit1, dsaPrivKey1)
+
+    voteCit2 = [0, 0, 0, 0, 1]
+    dsaPrivKey2, dsaPubKey2 = dsa.generateKeys()
+    cipherCit2 = []
+    for voteIndex in range(len(voteCit2)):
+        cipherCit2.append(ec.encrypt(voteCit2[voteIndex], publicKey))
+    signatureCit2 = dsa.sign(cipherCit2, dsaPrivKey2)
+
+    allCipher = [cipherCit1, cipherCit2]
+    allSignature = [signatureCit1, signatureCit2]
+    allPubKey = [dsaPubKey1, dsaPubKey2]
+
+    v.voteValidation(allCipher, allSignature, allPubKey)
+    v.counting()
+
+    print(v.getResult())

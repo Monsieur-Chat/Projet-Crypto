@@ -1,4 +1,4 @@
-from crypto.internal.algebra import mod_inv, int_to_bytes
+from ..internal.algebra import mod_inv, int_to_bytes
 from random import randint
 from ..internal.interface import interfaceEncryption
 
@@ -14,7 +14,7 @@ class ElGamal(interfaceEncryption):
         super().__init__()
 
     def encrypt(self, message, pubKey):
-        return EGM_encrypt(message, pubKey)
+        return EGA_encrypt(message, pubKey)
 
     def decrypt(self, cipher, privKey):
         return EG_decrypt(cipher[0], cipher[1], privKey)
@@ -26,6 +26,9 @@ class ElGamal(interfaceEncryption):
         r1, c1 = C1
         r2, c2 = C2
         return (r1 * r2, c1 * c2)
+
+    def nullCipher(self):
+        return (1, 1)
 
 
 def bruteLog(c, g, p):
@@ -50,7 +53,7 @@ def EGM_encrypt(message, public_key):
     k = randint(1, PARAM_Q - 1)
     r = pow(PARAM_G, k, PARAM_P)
     c = (message * pow(public_key, k, PARAM_P)) % PARAM_P
-    return r, c
+    return (r, c)
 
 
 def EGA_encrypt(message, public_key):
@@ -58,14 +61,14 @@ def EGA_encrypt(message, public_key):
     k = randint(1, PARAM_Q - 1)
     r = pow(PARAM_G, k, PARAM_P)
     c = (pow(PARAM_G, message, PARAM_P) * pow(public_key, k, PARAM_P)) % PARAM_P
-    return r, c
+    return (r, c)
 
 
 def EG_decrypt(r, c, private_key):
     s = pow(r, private_key, PARAM_P)
     s_inv = mod_inv(s, PARAM_P)
     decrypted_message_int = (c * s_inv) % PARAM_P
-    return decrypted_message_int
+    return bruteLog(decrypted_message_int, PARAM_G, PARAM_P)
 
 
 if __name__ == "__main__":
@@ -90,4 +93,4 @@ if __name__ == "__main__":
     r5, c5 = EGA_encrypt(m5, public_key)
 
     m6 = EG_decrypt(r1 * r2 * r3 * r4 * r5, c1 * c2 * c3 * c4 * c5, private_key)
-    print(bruteLog(m6, PARAM_G, PARAM_P))
+    print(m6, PARAM_G, PARAM_P)

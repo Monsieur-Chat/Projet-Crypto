@@ -23,9 +23,8 @@ class Dsa(interfaceSigniature):
         return DSA_generate_keys()
 
 
-def Hash(message: str) -> int:
-    h = SHA256.new(message.encode())
-    return int(h.hexdigest(), 16)
+def Hash(message: int) -> int:
+    return int(SHA256.new(bytes(str(message), "utf-8")).hexdigest(), 16)
 
 
 def DSA_generate_nonce() -> int:
@@ -38,8 +37,8 @@ def DSA_generate_keys() -> tuple[int, int]:
     return x, y
 
 
-def DSA_sign(message: str, x: int) -> tuple[int, int]:
-    h = int(SHA256.new(message.encode()).hexdigest(), 16)
+def DSA_sign(message: int, x: int) -> tuple[int, int]:
+    h = Hash(message)
     k = randint(1, PARAM_Q - 1)
     r = pow(PARAM_G, k, PARAM_P) % PARAM_Q
     k_inv = mod_inv(k, PARAM_Q)
@@ -47,7 +46,7 @@ def DSA_sign(message: str, x: int) -> tuple[int, int]:
     return r, s
 
 
-def DSA_verify(message: str, r: int, s: int, y: int) -> bool:
+def DSA_verify(message: int, r: int, s: int, y: int) -> bool:
     h = Hash(message)
     w = mod_inv(s, PARAM_Q)
     u1 = (h * w) % PARAM_Q

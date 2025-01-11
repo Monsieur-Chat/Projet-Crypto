@@ -30,6 +30,9 @@ class EcElGamal(interfaceEncryption):
         cSum = add(c1[0], c1[1], c2[0], c2[1], p)
         return (rSum, cSum)
 
+    def nullCipher(self):
+        return ((1, 0), (1, 0))
+
 
 def bruteECLog(C1, C2, p):
     s1, s2 = 1, 0
