@@ -141,7 +141,8 @@ def client_handler(conn, addr, config):
         }
         conn.sendall(json.dumps(msg_out).encode('utf-8'))
 
-        data = conn.recv(4096)
+        # Increase buffer size to handle larger JSON messages
+        data = conn.recv(65536)
         if not data:
             conn.close()
             return
