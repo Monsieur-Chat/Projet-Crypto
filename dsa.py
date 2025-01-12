@@ -1,6 +1,6 @@
 from algebra import mod_inv
 from Crypto.Hash import SHA256
-from random import randint
+import secrets  # Use this instead of random for cryptographically secure RNG
 
 ## parameters from MODP Group 24 -- Extracted from RFC 5114
 PARAM_P = 0x87A8E61DB4B6663CFFBBD19C651959998CEEF608660DD0F25D2CEED4435E3B00E00DF8F1D61957D4FAF7DF4561B2AA3016C3D91134096FAA3BF4296D830E9A7C209E0C6497517ABD5A8A9D306BCF67ED91F9E6725B4758C022E0B1EF4275BF7B6C5BFC11D45F9088B941F54EB1E59BB8BC39A0BF12307F5C4FDB70C581B23F76B63ACAE1CAA6B7902D52526735488A0EF13C6D9A51BFA4AB3AD8347796524D8EF6A167B5A41825D967E144E5140564251CCACB83E6B486F6B3CA3F7971506026C0B857F689962856DED4010ABD0BE621C3A3960A54E710C375F26375D7014103A4B54330C198AF126116D2276E11715F693877FAD7EF09CADB094AE91E1A1597
@@ -14,18 +14,19 @@ def Hash(message: str) -> int:
 
 
 def DSA_generate_nonce() -> int:
-    return randint(1, PARAM_Q - 1)
+    # Cryptographically secure random integer in [1..PARAM_Q-1]
+    return secrets.randbelow(PARAM_Q - 1) + 1
 
 
 def DSA_generate_keys() -> tuple[int, int]:
-    x = DSA_generate_nonce()
-    y = pow(PARAM_G, x, PARAM_P)
+    x = DSA_generate_nonce()  # private key
+    y = pow(PARAM_G, x, PARAM_P)  # public key
     return x, y
 
 
 def DSA_sign(message: str, x: int) -> tuple[int, int]:
     h = int(SHA256.new(message.encode()).hexdigest(), 16)
-    k = randint(1, PARAM_Q - 1)
+    k = DSA_generate_nonce()  # ephemeral nonce
     r = pow(PARAM_G, k, PARAM_P) % PARAM_Q
     k_inv = mod_inv(k, PARAM_Q)
     s = (k_inv * (h + x * r)) % PARAM_Q
@@ -43,10 +44,9 @@ def DSA_verify(message: str, r: int, s: int, y: int) -> bool:
 
 if __name__ == "__main__":
     m = "An important message !"
-    k = 0x7E7F77278FE5232F30056200582AB6E7CAE23992BCA75929573B779C62EF4759
-    x = 0x49582493D17932DABD014BB712FC55AF453EBFB2767537007B0CCFF6E857E6A3
+    # Example usage / test
+    x, y = DSA_generate_keys()
     r, s = DSA_sign(m, x)
-    print(r, s)
-    r = 0x5DDF26AE653F5583E44259985262C84B483B74BE46DEC74B07906C5896E26E5A
-    s = 0x194101D2C55AC599E4A61603BC6667DCC23BD2E9BDBEF353EC3CB839DCCE6EC1
-    print(r, s)
+    print(f"Signature: r = {hex(r)}, s = {hex(s)}")
+    is_valid = DSA_verify(m, r, s, y)
+    print(f"Signature valid: {is_valid}")

@@ -1,6 +1,6 @@
 from rfc7748 import x25519, add, computeVcoordinate, mult
 from Crypto.Hash import SHA256
-from random import randint
+import secrets  # Use this instead of random for cryptographically secure RNG
 from algebra import mod_inv
 
 p = 2**255 - 19
@@ -9,31 +9,29 @@ ORDER = 2**252 + 27742317777372353535851937790883648493
 BaseU = 9
 BaseV = computeVcoordinate(BaseU)
 
-
 def Hash(message):
     h = SHA256.new(message)
     return int(h.hexdigest(), 16)
 
-
 def ECDSA_generate_nonce():
-    return randint(1, ORDER - 1)
-
+    # Cryptographically secure random integer in [1..ORDER-1]
+    return secrets.randbelow(ORDER - 1) + 1
 
 def ECDSA_generate_keys():
-    d = randint(1, ORDER - 1)
+    # Private key d in [1..ORDER-1]
+    d = secrets.randbelow(ORDER - 1) + 1
+    # Public key Q = d * G
     Q = mult(d, BaseU, BaseV, p)
     return d, Q
-
 
 def ECDSA_sign(d, message):
     k = ECDSA_generate_nonce()
     h = Hash(message)
+    # R = k * G, we take R.x-coordinate mod ORDER as r
     R = mult(k, BaseU, BaseV, p)[0]
     r = R % ORDER
     s = (mod_inv(k, ORDER) * (h + d * r)) % ORDER
     return r, s
-    #  x, y
-
 
 def ECDSA_verify(Q, message, r, s):
     h = Hash(message)
@@ -47,7 +45,6 @@ def ECDSA_verify(Q, message, r, s):
     print(r)
     return v == r
 
-
 if __name__ == "__main__":
     message = b"A very very important message !"
     x = 0xC841F4896FE86C971BEDBCF114A6CFD97E4454C9BE9ABA876D5A195995E2BA8
@@ -55,6 +52,7 @@ if __name__ == "__main__":
     r, s = ECDSA_sign(x, message)
     expected_r = 0x429146A1375614034C65C2B6A86B2FC4AEC00147F223CB2A7A22272D4A3FDD2
     expected_s = 0xF23BCDEBE2E0D8571D195A9B8A05364B14944032032EEEECD22A0F6E94F8F33
+
     is_valid = ECDSA_verify(Q, message, r, s)
     print(f"Generated r: {hex(r)}")
     print(f"Generated s: {hex(s)}")
