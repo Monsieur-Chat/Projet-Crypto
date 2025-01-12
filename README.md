@@ -73,7 +73,7 @@ Dans la partie client, chaque votant :
 
 - Génère ou possède déjà une clé ECDSA (privée/publique) afin de signer les votes.
 - Récupère la clé publique EC ElGamal du serveur pour chiffrer son bulletin.
-- Prépare un vecteur de vote (par exemple [0, 1, 0, 0] pour sélectionner un seul candidat parmi plusieurs).
+- Prépare un vecteur de vote (par exemple [0, 1, 0, 0] pour sélectionner un candidat).
 - Chiffre chaque entrée du vecteur (soit 0, soit 1) en utilisant la clé publique ElGamal.
 - Signe chaque élément chiffré grâce à sa clé privée ECDSA.
 - Envoie l’ensemble (bulletin chiffré + signatures) au serveur.
