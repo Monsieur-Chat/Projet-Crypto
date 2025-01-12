@@ -12,13 +12,14 @@ from dsa import DSA_generate_keys, DSA_sign, DSA_verify
 from ecdsa import ECDSA_generate_keys, ECDSA_sign, ECDSA_verify
 
 def areVotesValid(voteList, signatures, userPubKey, signature_algo, encryption_algo):
+    # Cette fonction n'est pas utilisée côté client, mais pourrait servir pour une vérification locale.
     for i in range(len(voteList)):
         if encryption_algo == 'ElGamal':
             message = f"{voteList[i][0]}_{voteList[i][1]}"
         elif encryption_algo == 'ECElGamal':
             message = json.dumps(voteList[i])
         else:
-            print(f"Unsupported encryption algorithm: {encryption_algo}")
+            print(f"Algorithme de chiffrement non supporté : {encryption_algo}")
             return False
 
         message_bytes = message.encode('utf-8')
@@ -28,7 +29,7 @@ def areVotesValid(voteList, signatures, userPubKey, signature_algo, encryption_a
         elif signature_algo == 'ECDSA':
             valid = ECDSA_verify(userPubKey, message_bytes, r, s)
         else:
-            print(f"Unsupported signature algorithm: {signature_algo}")
+            print(f"Algorithme de signature non supporté : {signature_algo}")
             return False
         if not valid:
             return False
@@ -36,17 +37,19 @@ def areVotesValid(voteList, signatures, userPubKey, signature_algo, encryption_a
 
 def castVote(voteList, userPrivKey, candidatePubKeys, encryption_algo, signature_algo):
     encryptedVotes = []
+    # Chiffrement des votes pour chaque candidat
     for i, vote in enumerate(voteList):
         pubKey = candidatePubKeys[i]
         if encryption_algo == 'ElGamal':
-            enc = EGA_encrypt(vote, pubKey)  # Use additive encryption for ElGamal
+            enc = EGA_encrypt(vote, pubKey)  # Utilisation du chiffrement additif pour ElGamal
         elif encryption_algo == 'ECElGamal':
             enc = ECEG_encrypt(vote, pubKey)
         else:
-            raise ValueError(f"Unsupported encryption algorithm: {encryption_algo}")
+            raise ValueError(f"Algorithme de chiffrement non supporté : {encryption_algo}")
         encryptedVotes.append(enc)
     
     signatures = []
+    # Signature de chaque vote chiffré
     for enc in encryptedVotes:
         if encryption_algo == 'ElGamal':
             message = f"{enc[0]}_{enc[1]}"
@@ -55,14 +58,14 @@ def castVote(voteList, userPrivKey, candidatePubKeys, encryption_algo, signature
             message = json.dumps(enc)
             message_bytes = message.encode('utf-8')
         else:
-            raise ValueError(f"Unsupported encryption algorithm: {encryption_algo}")
+            raise ValueError(f"Algorithme de chiffrement non supporté : {encryption_algo}")
         
         if signature_algo == 'DSA':
             r, s = DSA_sign(message, userPrivKey)
         elif signature_algo == 'ECDSA':
             r, s = ECDSA_sign(userPrivKey, message_bytes)
         else:
-            raise ValueError(f"Unsupported signature algorithm: {signature_algo}")
+            raise ValueError(f"Algorithme de signature non supporté : {signature_algo}")
         signatures.append((r, s))
     return encryptedVotes, signatures
 
@@ -74,9 +77,11 @@ def main():
     HOST = sys.argv[1]
     PORT = int(sys.argv[2])
 
+    # Connexion au serveur
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
 
+        # Réception des informations initiales du serveur
         data = s.recv(8192)
         msg_in = json.loads(data.decode('utf-8'))
 
@@ -85,44 +90,49 @@ def main():
         signature_algo = msg_in["signature_algo"]
         encryption_algo = msg_in["encryption_algo"]
 
-        print("[Client] Received ballot-box public key:", sharedPubKey)
-        print("[Client] Number of candidates:", num_candidates)
-        print("[Client] Signature Algorithm:", signature_algo)
-        print("[Client] Encryption Algorithm:", encryption_algo)
+        print("[Client] Clé publique de l'urne reçue :", sharedPubKey)
+        print("[Client] Nombre de candidats :", num_candidates)
+        print("[Client] Algorithme de signature :", signature_algo)
+        print("[Client] Algorithme de chiffrement :", encryption_algo)
 
+        # Génération de la clé éphémère du client
         if signature_algo == 'DSA':
             userPrivKey, userPubKey = DSA_generate_keys()
         elif signature_algo == 'ECDSA':
             userPrivKey, userPubKey = ECDSA_generate_keys()
         else:
-            print(f"Unsupported signature algorithm: {signature_algo}")
+            print(f"Algorithme de signature non supporté : {signature_algo}")
             sys.exit(1)
 
-        print("[Client] Generated ephemeral user private key.")
-        print("[Client] userPubKey =", userPubKey)
+        print("[Client] Clé privée éphémère générée.")
+        print("[Client] Clé publique de l'utilisateur =", userPubKey)
 
+        # Choix du candidat
         try:
-            chosen = int(input(f"Choose a candidate [1..{num_candidates}]: ")) - 1
+            chosen = int(input(f"Choisissez un candidat [1..{num_candidates}] : ")) - 1
             if chosen < 0 or chosen >= num_candidates:
-                print("Invalid candidate number!")
+                print("Numéro de candidat invalide !")
                 return
         except ValueError:
-            print("Invalid input. Please enter a number.")
+            print("Entrée invalide. Veuillez entrer un nombre.")
             return
 
         voteList = [0] * num_candidates
-        voteList[chosen] = 1
+        voteList[chosen] = 1  # Vote pour le candidat choisi
 
+        # Préparation des clés publiques pour chaque candidat
         if encryption_algo == 'ElGamal':
             candidatePubKeys = [sharedPubKey for _ in range(num_candidates)]
         elif encryption_algo == 'ECElGamal':
             candidatePubKeys = [tuple(sharedPubKey) for _ in range(num_candidates)]
         else:
-            print(f"Unsupported encryption algorithm: {encryption_algo}")
+            print(f"Algorithme de chiffrement non supporté : {encryption_algo}")
             sys.exit(1)
 
+        # Chiffrement et signature du vote
         encryptedVotes, signatures = castVote(voteList, userPrivKey, candidatePubKeys, encryption_algo, signature_algo)
 
+        # Préparation des données à envoyer au serveur
         if encryption_algo == 'ElGamal':
             to_send_encrypted = [[enc[0], enc[1]] for enc in encryptedVotes]
             if signature_algo == 'ECDSA':
@@ -136,7 +146,7 @@ def main():
             else:
                 userPubKey_send = [userPubKey]
         else:
-            print(f"Unsupported encryption algorithm: {encryption_algo}")
+            print(f"Algorithme de chiffrement non supporté : {encryption_algo}")
             sys.exit(1)
 
         msg_out = {
@@ -146,7 +156,7 @@ def main():
         }
         s.sendall(json.dumps(msg_out).encode('utf-8'))
 
-        print("[Client] Vote sent. Closing.")
+        print("[Client] Vote envoyé. Fermeture de la connexion.")
 
 if __name__ == "__main__":
     main()

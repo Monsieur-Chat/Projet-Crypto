@@ -59,51 +59,59 @@ En résumé, l'EC ElGamal permet d'additionner des messages chiffrés directemen
 
 ## Implémentation dans un système de vote
 
-### Partie Serveur
-
-Dans un premier temps, le serveur (script **`server.py`**) :
-
-1. **Génère** un couple de **clé privée** et **clé publique** (EC ElGamal).  
-   - Cette clé publique est mise à disposition de tous les clients.  
-   - La clé privée est **conservée secrète** pour le dépouillement final.
-
-2. **Crée** l’urne, qui va stocker les votes chiffrés pour chaque candidat.  
-   - Cette urne est souvent initialisée à \((1, 0)\) (ou tout autre point neutre selon l’implémentation) pour **chaque candidat**.  
-   - L’algorithme de chiffrement utilisé est **EC ElGamal**, donc l’urne est stockée sous forme de paires \((r, c)\) pour chacun.
-
-3. **Reçoit** les votes des clients.  
-   - Chaque vote consiste en un **bulletin chiffré** (les paires \((C_1, C_2)\) pour chaque candidat), **signé** via ECDSA.  
-   - Le serveur exécute une **vérification** de la signature ECDSA (avec la **clé publique** du votant). Si la signature est valide, le vote est considéré comme **authentique**.
-
-4. **Additionne** chaque vote dans l’urne grâce à la **propriété homomorphique** de EC ElGamal.  
-   - Concrètement, on additionne composante \((r)\) de l’urne et composante \((c)\) de l’urne avec celles du vote.
-
-5. **Dépouille** les votes une fois le scrutin terminé :  
-   - Le serveur **déchiffre** la case associée à chaque candidat en utilisant **la clé privée** ElGamal.  
-   - Il **retrouve** ainsi le nombre de votes pour chaque candidat.  
-   - Il **détermine** le gagnant ou les gagnants (en cas d’égalité).
+Les scripts Python du serveur et du client implémentent un système de vote électronique sécurisé, permettant de choisir dynamiquement l'algorithme de signature (DSA ou ECDSA) et l'algorithme de chiffrement (ElGamal ou EC-ElGamal). Ci-dessous, un commentaire détaillé du fonctionnement global de ces deux scripts, en français.
 
 ---
 
-### Partie Client
+## Aperçu Général
 
-Dans la partie client (script **`client.py`**), chaque votant :
+### Serveur (`serveur.py`)
 
-1. **Génère** (ou possède déjà) une **clé ECDSA** (privée/publique) pour **signer** les votes.  
-2. **Récupère** la **clé publique EC ElGamal** du serveur pour **chiffrer** son bulletin de vote.  
-3. **Crée** un vecteur de vote (par exemple `[0, 1, 0, 0]` pour sélectionner un seul candidat).  
-4. **Chiffre** chaque entrée du vecteur (soit `0`, soit `1`) avec la clé publique ElGamal.  
-   - Chaque entrée devient un couple \((C_1, C_2)\).  
-5. **Signe** chaque élément chiffré (ou le bulletin complet) avec **la clé privée** ECDSA pour prouver l’origine et l’intégrité du vote.  
-6. **Envoie** l’ensemble (bulletin chiffré + signatures) au **serveur**.
+1. **Initialisation et Sélection des Algorithmes**  
+   - Le serveur démarre et demande à l'opérateur de choisir un algorithme de signature (DSA ou ECDSA) et un algorithme de chiffrement (ElGamal ou EC-ElGamal).
+   - En fonction de ces choix, il génère une paire de clés partagées pour le chiffrement.
 
-#### Modifications / Points clés dans `client.py` :
+2. **Configuration du Serveur**  
+   - Le serveur initialise une "urne" électronique (`ballot_box_r` et `ballot_box_c`) pour accumuler les votes encryptés.
+   - Une structure de configuration (`config`) est préparée, contenant les paramètres sélectionnés, les clés, et un verrou pour la synchronisation des threads.
 
-- Nous avons **introduit** la fonction `generate_secure_private_key()` pour s’assurer d’utiliser un **générateur de nombres aléatoires cryptographiquement sûr** (`secrets` au lieu de `random`).  
-- La fonction `castVote(voteList, userPrivKey, pubKey)` permet de **chiffrer** le vecteur de vote et de **signer** chaque composante.  
-- Avant l’envoi, on peut **afficher** des **informations de débogage** (la clé privée ECDSA, la forme du bulletin chiffré, etc.) pour s’assurer du bon fonctionnement.
+3. **Gestion des Connexions Clients**  
+   - Le serveur écoute les connexions entrantes et lance un thread pour chaque client via la fonction `client_handler`.
+   - Avant de traiter une nouvelle connexion, le serveur vérifie s'il a déjà atteint le nombre maximal d'électeurs et si le vote est terminé (via un flag `tallied`). Si le vote est terminé, il refuse la nouvelle connexion.
+
+4. **Interaction avec le Client dans `client_handler`**  
+   - **Envoi des Informations Initiales** : Le serveur envoie au client la clé publique, le nombre de candidats, et les algorithmes de signature et de chiffrement sélectionnés.
+   - **Réception du Vote** : Le serveur reçoit le vote encrypté et les signatures du client, avec un buffer étendu pour gérer de gros messages JSON.
+   - **Vérification du Vote** : Le serveur utilise l'algorithme de signature choisi pour vérifier l'authenticité du vote reçu.
+   - **Agrégation des Votes** : Si la vérification réussit, le serveur ajoute le vote à l'urne électronique.
+   - **Tally Final** : Lorsqu’il atteint le nombre maximal de votes, le serveur effectue un décompte final des votes, affiche les résultats, et marque le processus comme terminé pour refuser les connexions futures.
+
+### Client (`client.py`)
+
+1. **Connexion Initiale**  
+   - Le client se connecte au serveur et reçoit les informations initiales : clé publique, nombre de candidats, et algorithmes sélectionnés.
+   - En fonction de l'algorithme de signature choisi (DSA ou ECDSA), le client génère une paire de clés éphémères.
+
+2. **Saisie du Vote**  
+   - Le client invite l’utilisateur à choisir un candidat.
+   - Il prépare un vecteur de votes où un seul élément est "1" (pour le candidat sélectionné) et le reste "0".
+
+3. **Chiffrement et Signature du Vote**  
+   - Pour chaque candidat, le client chiffre son vote en utilisant l'algorithme de chiffrement sélectionné :
+     - **ElGamal (Additif)** : Utilise `EGA_encrypt` pour encoder le vote de manière additive.
+     - **EC-ElGamal** : Utilise `ECEG_encrypt`.
+   - Ensuite, le client signe chaque vote chiffré selon l'algorithme de signature choisi (DSA ou ECDSA).
+
+4. **Envoi du Vote**  
+   - Le client sérialise les votes encryptés, les signatures, et sa clé publique dans un message JSON.
+   - Il envoie ce message au serveur et ferme la connexion.
 
 ---
+
+Ce système de vote modulaire permet de changer dynamiquement les algorithmes cryptographiques utilisés pour sécuriser les votes, tout en gérant correctement la collecte, l'agrégation, et le décompte des votes dans un environnement multi-threadé.
+
+
+
 
 ## Conclusion
 
