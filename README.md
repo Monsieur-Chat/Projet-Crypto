@@ -68,7 +68,15 @@ En résumé, l'EC ElGamal permet d'additionner des messages chiffrés directemen
 - Une fois les votes reçus, l'urne passe au dépouillement : chaque case mémoire associé à un candidat est déchiffré en utilisant la clé privée et les votes sont comparés et le (ou les gagnants en cas d'égalité) gagnant est déterminé
 
 
+Partie Client
+Dans la partie client, chaque votant :
 
+- Génère ou possède déjà une clé ECDSA (privée/publique) afin de signer les votes.
+- Récupère la clé publique EC ElGamal du serveur pour chiffrer son bulletin.
+- Prépare un vecteur de vote (par exemple [0, 1, 0, 0] pour sélectionner un seul candidat parmi plusieurs).
+- Chiffre chaque entrée du vecteur (soit 0, soit 1) en utilisant la clé publique ElGamal.
+- Signe chaque élément chiffré grâce à sa clé privée ECDSA.
+- Envoie l’ensemble (bulletin chiffré + signatures) au serveur.
 
 
 
