@@ -61,10 +61,10 @@ En résumé, l'EC ElGamal permet d'additionner des messages chiffrés directemen
 # Implémentation dans un système de vote
 ## Partie Serveur
 
-- Dans un premier temps, le serveur initialise un couple de clé privée et publique, puis l'urne qui serviras à stocker les votes pour chaque candidat, l'algorythme utilisé étant ECElgamal, elle est composée de matrice  (1,0) pour le nombre de candidat à l'éléction.
-- Lorsqu'un vote (chiffré avec la clé publique) est reçu, le serveur vérifie d'abord sa validité en comparant les signatures reçus pour chaque vote avec la clé publique du votant émetteur, l'algorythme utilisé est ECDSA.
+- Dans un premier temps, le serveur initialise un couple de clé privée et publique, puis l'urne qui serviras à stocker les votes pour chaque candidat, l'algorithme utilisé étant ECElgamal, elle est composée de matrices (1,0) pour le nombre de candidats à l'élection comme valeur initiale.
+- Lorsqu'un vote (chiffré avec la clé publique) est reçu, le serveur vérifie d'abord sa validité en comparant les signatures reçues pour chaque vote avec la clé publique du votant émetteur, l'algorithme utilisé est ECDSA.
 - Dès lors que la validité du vote est vérifiée, chaque chiffré est additionné en utilisant la propriété homomorphique de ECElgamal.
-  On rappel que chaque vote est composé d'une matrice de 0 et d'un 1, tous chiffrés, pour le candidat visé par ce vote.
+  On rappelle que chaque vote est composé d'une matrice de 0 et d'un 1, tous chiffrés, pour le candidat visé par ce vote.
 - Une fois les votes reçus, l'urne passe au dépouillement : chaque case mémoire associé à un candidat est déchiffré en utilisant la clé privée et les votes sont comparés et le (ou les gagnants en cas d'égalité) gagnant est déterminé
 
 
