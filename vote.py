@@ -7,28 +7,28 @@ from crypto.signature import Dsa
 class Urn:
     def __init__(self, signature: interfaceSigniature, encryption: interfaceEncryption):
         super().__init__()
-        self.signature = signature
-        self.encryption = encryption
-        self.__privateKey, self.__publicKey = self.encryption.generateKeys()
+        self.__signature = signature
+        self.__encryption = encryption
+        self.__privateKey, self.__publicKey = self.__encryption.generateKeys()
         self.__nbOfCandidates = 5
         self.__listOfValidVote: list = []
         self.__voteList: list = []
-        self.__result: list = [self.encryption.nullCipher()] * self.__nbOfCandidates
+        self.__result: list = [self.__encryption.nullCipher()] * self.__nbOfCandidates
 
     def getPublicKey(self):
         return self.__publicKey
 
     def __validSignature(self, votes, signature, userPubKey):
-        return self.signature.verify(votes, signature, userPubKey)
+        return self.__signature.verify(votes, signature, userPubKey)
 
     def __validVote(self, voteList):
-        sumVote = self.encryption.nullCipher()
+        sumVote = self.__encryption.nullCipher()
         if not len(voteList) == self.__nbOfCandidates:
             cprint("Invalid number of votes", "red")
             return False
         for i in range(len(voteList)):
-            sumVote = self.encryption.addCipher(sumVote, voteList[i])
-        sumVote = self.encryption.decrypt(sumVote, self.__privateKey)
+            sumVote = self.__encryption.addCipher(sumVote, voteList[i])
+        sumVote = self.__encryption.decrypt(sumVote, self.__privateKey)
         return sumVote == 1
 
     def vote(self, vote):
