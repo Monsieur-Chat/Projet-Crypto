@@ -2,6 +2,7 @@ from termcolor import cprint
 from crypto import interfaceSigniature, interfaceEncryption
 from crypto.encryption import ElGamal
 from crypto.signature import Dsa
+from client import Client
 
 
 class Box:
@@ -13,6 +14,7 @@ class Box:
         self.__nbOfCandidates = 5
         self.__listOfValidVote: list = []
         self.__voteList: list = []
+        self.__voteSignature = []
         self.__result: list = [self.__encryption.nullCipher()] * self.__nbOfCandidates
 
     def getPublicKey(self):
@@ -31,14 +33,20 @@ class Box:
         sumVote = self.__encryption.decrypt(sumVote, self.__privateKey)
         return sumVote == 1
 
-    def vote(self, vote):
+    def vote(self, vote, signature):
+        assert len(self.__voteList) == len(
+            self.__voteSignature
+        ), "mismatch between votes and signatures"
         self.__voteList.append(vote)
+        self.__voteSignature.append(signature)
 
-    def voteValidation(self, signatures, usersPubKey):
-        assert len(self.__voteList) == len(signatures) == len(usersPubKey)
+    def voteValidation(self, usersPubKey):
+        assert (
+            len(self.__voteList) == len(self.__voteSignature) == len(usersPubKey)
+        ), "mismatch between votes and signatures"
         for i in range(len(self.__voteList)):
             if self.__validSignature(
-                self.__voteList[i], signatures[i], usersPubKey[i]
+                self.__voteList[i], self.__voteSignature[i], usersPubKey[i]
             ) and self.__validVote(self.__voteList[i]):
                 self.__listOfValidVote.append(self.__voteList[i])
                 print("Valid vote")
@@ -46,17 +54,17 @@ class Box:
                 cprint("Invalid vote", "red")
 
     def counting(self):
-        assert self.__listOfValidVote, "please validate vote first"
+        assert self.__listOfValidVote, "please validate vote first or not valid vote"
         cprint(f"Number of valid votes: {len(self.__listOfValidVote)}", "green")
         for candidate in range(self.__nbOfCandidates):
             for vote in self.__listOfValidVote:
-                self.__result[candidate] = self.encryption.addCipher(
+                self.__result[candidate] = self.__encryption.addCipher(
                     self.__result[candidate], vote[candidate]
                 )
 
     def getResult(self):
         for i in range(len(self.__result)):
-            self.__result[i] = self.encryption.decrypt(
+            self.__result[i] = self.__encryption.decrypt(
                 self.__result[i], self.__privateKey
             )
         return self.__result
@@ -66,29 +74,32 @@ if __name__ == "__main__":
     v = Box(Dsa(), ElGamal())
     publicKey = v.getPublicKey()
 
-    ec = ElGamal()
     dsa = Dsa()
-    voteCit1 = [1, 0, 0, 0, 0]
-    dsaPrivKey1, dsaPubKey1 = dsa.generateKeys()
-    cipherCit1 = []
-    for voteIndex in range(len(voteCit1)):
-        cipherCit1.append(ec.encrypt(voteCit1[voteIndex], publicKey))
-    signatureCit1 = dsa.sign(cipherCit1, dsaPrivKey1)
+    cit1 = Client(Dsa(), ElGamal(), publicKey)
+    cit2 = Client(Dsa(), ElGamal(), publicKey)
 
-    voteCit2 = [0, 0, 0, 0, 1]
+    dsaPrivKey1, dsaPubKey1 = dsa.generateKeys()
     dsaPrivKey2, dsaPubKey2 = dsa.generateKeys()
-    cipherCit2 = []
-    for voteIndex in range(len(voteCit2)):
-        cipherCit2.append(ec.encrypt(voteCit2[voteIndex], publicKey))
-    signatureCit2 = dsa.sign(cipherCit2, dsaPrivKey2)
+
+    cit1.setKeys(dsaPrivKey1, dsaPubKey1)
+    cit2.setKeys(dsaPrivKey2, dsaPubKey2)
+
+    cit1.vote([1, 0, 0, 0, 0])
+    cit2.vote([0, 1, 0, 0, 0])
+
+    cipherCit1, signatureCit1 = cit1.getVote()
+    cipherCit2, signatureCit2 = cit2.getVote()
+
+    # print(cipherCit1)
+    # print(signatureCit1)
 
     allCipher = [cipherCit1, cipherCit2]
     allSignature = [signatureCit1, signatureCit2]
     allPubKey = [dsaPubKey1, dsaPubKey2]
 
-    v.vote(cipherCit1)
-    v.vote(cipherCit2)
-    v.voteValidation(allSignature, allPubKey)
+    v.vote(cipherCit1, signatureCit1)
+    v.vote(cipherCit2, signatureCit2)
+    v.voteValidation(allPubKey)
     v.counting()
 
     print(v.getResult())
