@@ -50,3 +50,4 @@ if __name__ == "__main__":
     print(f"Signature: r = {hex(r)}, s = {hex(s)}")
     is_valid = DSA_verify(m, r, s, y)
     print(f"Signature valid: {is_valid}")
+ 
