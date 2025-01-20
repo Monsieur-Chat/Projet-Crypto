@@ -176,7 +176,7 @@ def client_handler(conn, addr, config):
             conn.close()
             return
 
-        # Reconstruction des votes encryptés
+        # Reconstruction des votes chiffrés
         if encryption_algo == 'ECElGamal':
             encryptedVotes_tuples = [tuple(vote) for vote in encryptedVotes]
         elif encryption_algo == 'ElGamal':
