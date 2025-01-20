@@ -265,8 +265,6 @@ def main():
         print(f"Algorithme de chiffrement non supporté : {encryption_algo}")
         sys.exit(1)
 
-    print(f"[Debug] Clé privée partagée = {sharedPrivKey}")
-    print(f"[Debug] Clé publique partagée  = {sharedPubKey}\n")
 
     # Initialisation de l'urne en fonction de l'algorithme choisi
     if encryption_algo == 'ElGamal':

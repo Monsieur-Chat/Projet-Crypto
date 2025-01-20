@@ -90,7 +90,6 @@ def main():
         signature_algo = msg_in["signature_algo"]
         encryption_algo = msg_in["encryption_algo"]
 
-        print("[Client] Clé publique de l'urne reçue :", sharedPubKey)
         print("[Client] Nombre de candidats :", num_candidates)
         print("[Client] Algorithme de signature :", signature_algo)
         print("[Client] Algorithme de chiffrement :", encryption_algo)
@@ -103,9 +102,6 @@ def main():
         else:
             print(f"Algorithme de signature non supporté : {signature_algo}")
             sys.exit(1)
-
-        print("[Client] Clé privée éphémère générée.")
-        print("[Client] Clé publique de l'utilisateur =", userPubKey)
 
         # Choix du candidat
         try:
